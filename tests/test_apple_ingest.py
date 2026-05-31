@@ -2,10 +2,10 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 
-from airdrome.cloud.apple.unify import unify_apple_playlists, unify_apple_tracks
 from airdrome.cloud.apple.xml_library import do_import_playlists, do_import_tracks
 from airdrome.cloud.sources import SourcePlaylist, SourceTrack
 from airdrome.enums import Source
+from airdrome.library.unify import unify_source_playlists, unify_source_tracks
 from airdrome.models import Playlist, PlaylistTrack, Track
 
 
@@ -102,7 +102,7 @@ def test_unify_creates_track(session):
     data = _track_data(name="My Song", artist="My Artist")
     do_import_tracks(session, {str(data["Track ID"]): data})
 
-    unify_apple_tracks(session)
+    unify_source_tracks(session)
 
     track = session.scalars(select(Track).where(Track.title == "My Song")).one()
     assert track.artist == "My Artist"
@@ -111,7 +111,7 @@ def test_unify_creates_track(session):
 def test_unify_links_apple_track(session):
     data = _track_data(name="My Song")
     do_import_tracks(session, {str(data["Track ID"]): data})
-    unify_apple_tracks(session)
+    unify_source_tracks(session)
 
     apple_track = _xml_track(session, data["Track ID"]).one()
     assert apple_track.track_id is not None
@@ -123,7 +123,7 @@ def test_unify_reuses_existing_track(session):
     d2 = _track_data(name="Same Song", artist="Same Artist")
     do_import_tracks(session, {str(d1["Track ID"]): d1, str(d2["Track ID"]): d2})
 
-    unify_apple_tracks(session)
+    unify_source_tracks(session)
 
     tracks_in_db = session.scalars(select(Track).where(Track.title == "Same Song")).all()
     assert len(tracks_in_db) == 1
@@ -133,9 +133,9 @@ def test_unify_idempotent(session):
     data = _track_data()
     do_import_tracks(session, {str(data["Track ID"]): data})
 
-    first_created, *_ = unify_apple_tracks(session)
+    first_created, *_ = unify_source_tracks(session)
     session.flush()
-    second_created, *_ = unify_apple_tracks(session)
+    second_created, *_ = unify_source_tracks(session)
 
     assert first_created == 1
     assert second_created == 0
@@ -186,12 +186,12 @@ def test_import_playlists_idempotent(session):
 def test_unify_playlists_creates_canonical_playlist(session):
     track_data = _track_data()
     do_import_tracks(session, {str(track_data["Track ID"]): track_data})
-    unify_apple_tracks(session)
+    unify_source_tracks(session)
 
     pl = _playlist_data(name="Unified Playlist", track_ids=[track_data["Track ID"]])
     do_import_playlists(session, [pl])
 
-    pl_created, tr_linked = unify_apple_playlists(session)
+    pl_created, tr_linked = unify_source_playlists(session)
 
     assert pl_created == 1
     assert tr_linked == 1
@@ -204,14 +204,14 @@ def test_unify_playlists_creates_canonical_playlist(session):
 def test_unify_playlists_idempotent(session):
     track_data = _track_data()
     do_import_tracks(session, {str(track_data["Track ID"]): track_data})
-    unify_apple_tracks(session)
+    unify_source_tracks(session)
 
     pl = _playlist_data(track_ids=[track_data["Track ID"]])
     do_import_playlists(session, [pl])
 
-    first_pl, first_tr = unify_apple_playlists(session)
+    first_pl, first_tr = unify_source_playlists(session)
     session.flush()
-    second_pl, second_tr = unify_apple_playlists(session)
+    second_pl, second_tr = unify_source_playlists(session)
 
     assert first_pl == 1
     assert second_pl == 0

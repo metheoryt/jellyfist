@@ -1,6 +1,8 @@
 import itertools
 from typing import TYPE_CHECKING
 
+from airdrome.enums import Source
+
 from ..utils import generate_path
 
 
@@ -14,6 +16,22 @@ class AppleFSDiscoverable:
         compilation: bool
         track_number: int | None
         disc_number: int | None
+        provider: Source
+        extra: dict
+
+    @property
+    def expects_local_file(self) -> bool:
+        """Whether a local audio file is expected on disk for this source track.
+
+        File binding is attempted for every source track regardless; this flag only encodes the
+        "a local copy should exist" expectation (XML tracks not added from Apple Music; MS tracks
+        with a known audio extension) so a missing match can be surfaced.
+        """
+        if self.provider == Source.APPLE_XML:
+            return not self.extra.get("apple_music", False)
+        if self.provider == Source.APPLE_MS:
+            return bool(self.extra.get("audio_file_extension"))
+        return False
 
     @property
     def path_artist(self) -> str:
