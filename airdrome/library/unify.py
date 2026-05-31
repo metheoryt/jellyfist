@@ -15,8 +15,10 @@ from airdrome.models import AwareDatetime, Playlist, PlaylistTrack, Track, Track
 def _bind_track_files(source_track: SourceTrack, s: Session) -> list[TrackFile]:
     tfs = []
     for rel_path in source_track.possible_locations(max_suffix=2):
+        # Case-insensitive: the on-disk path's casing can differ from the casing
+        # generate_path() derives from source metadata (ILIKE, not case-sensitive LIKE).
         tf: TrackFile | None = s.scalars(
-            select(TrackFile).where(TrackFile.source_path.contains(rel_path))
+            select(TrackFile).where(TrackFile.source_path.icontains(rel_path))
         ).one_or_none()
         if tf and tf.track_id is None:
             tfs.append(tf)
@@ -25,6 +27,7 @@ def _bind_track_files(source_track: SourceTrack, s: Session) -> list[TrackFile]:
 
 def _unify_source_tracks(s: Session) -> Iterator[tuple[bool, bool, int]]:
     for st in s.scalars(select(SourceTrack).where(SourceTrack.track_id.is_(None))):
+        st: SourceTrack
         track_defaults = {
             "track_n": st.track_number,
             "disc_n": st.disc_number,
@@ -54,7 +57,7 @@ def _unify_source_tracks(s: Session) -> Iterator[tuple[bool, bool, int]]:
             track.files.append(tf)
         n_files = len(tfs)
         if not tfs and st.expects_local_file:
-            console.print(f"[dim yellow]expected local file not found: {st.title!r}[/dim yellow]")
+            console.print(f"[dim yellow]expected but not found: {st.possible_locations()[0]!r}[/dim yellow]")
 
         s.flush()
         yield track_created, track_updated, n_files

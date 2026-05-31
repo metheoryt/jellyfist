@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlalchemy import select
 
@@ -6,7 +7,7 @@ from airdrome.cloud.apple.xml_library import do_import_playlists, do_import_trac
 from airdrome.cloud.sources import SourcePlaylist, SourceTrack
 from airdrome.enums import Source
 from airdrome.library.unify import unify_source_playlists, unify_source_tracks
-from airdrome.models import Playlist, PlaylistTrack, Track
+from airdrome.models import Playlist, PlaylistTrack, Track, TrackFile
 
 
 def _xml_track(session, source_id):
@@ -139,6 +140,34 @@ def test_unify_idempotent(session):
 
     assert first_created == 1
     assert second_created == 0
+
+
+def test_unify_binds_local_file_case_insensitively(session):
+    """A local file whose path casing differs from the metadata-derived path still binds."""
+    st = SourceTrack(
+        provider=Source.APPLE_XML,
+        source_id="case-test",
+        title="My Song",
+        artist="My Artist",
+        album="My Album",
+        album_artist="My Artist",
+        track_number=1,
+    )
+    session.add(st)
+    session.flush()
+
+    rel_path = st.possible_locations(max_suffix=2)[0]
+    # File on disk exists, but with different casing than generate_path() produces.
+    on_disk = Path("/music") / rel_path.upper()
+    tf = TrackFile(source_path=on_disk)
+    session.add(tf)
+    session.flush()
+
+    unify_source_tracks(session)
+    session.refresh(tf)
+
+    assert tf.track_id is not None
+    assert tf.track_id == st.track_id
 
 
 # ── playlist import tests ─────────────────────────────────────────────────────
