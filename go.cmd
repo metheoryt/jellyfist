@@ -23,3 +23,8 @@ airdrome library organize -c
 # Note the database (navidrome.db) path.
 # $$$
 
+# Navidrome is stopped, start tracks sync
+airdrome navidrome push  # tracks, ratings, scrobbles
+airdrome navidrome playlists  # playlists
+
+# Then, start Navidrome again
