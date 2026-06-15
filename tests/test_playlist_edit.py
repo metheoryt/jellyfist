@@ -66,6 +66,39 @@ def test_merge_appends_unique_canon_resolved_and_tombstones(session):
     assert tomb is not None and tomb.surviving_playlist_id == base.id
 
 
+def test_merge_multiple_others_dedups_across_them_with_contiguous_positions(session):
+    """Folding several others keeps positions gap-free and dedups a track shared between them."""
+    a, b, c = make_track(session, "a"), make_track(session, "b"), make_track(session, "c")
+    base = _pl(session, "Base", [a], source_id="base-1")
+    other1 = _pl(session, "One", [b, c], source_id="one-1")
+    other2 = _pl(session, "Two", [c], source_id="two-1")  # c is shared with other1
+
+    appended = merge_playlists(session, base, [other1, other2])
+
+    assert appended == 2  # b and c once each; c not re-added from other2
+    assert _members(session, base) == [a.id, b.id, c.id]  # contiguous, source order preserved
+    assert session.get(Playlist, other1.id) is None
+    assert session.get(Playlist, other2.id) is None
+
+
+def test_merge_idless_other_is_deleted_without_a_tombstone(session):
+    """An absorbed playlist with no source_id folds in and is deleted, but writes no tombstone."""
+    a, b = make_track(session, "a"), make_track(session, "b")
+    base = _pl(session, "Base", [a], source_id="base-1")
+    other = _pl(session, "Other", [b], source_id="other-1")
+    other.source_id = None  # idless: nothing for `land` to recreate, so nothing to tombstone
+    session.flush()
+
+    appended = merge_playlists(session, base, [other])
+
+    assert appended == 1
+    assert _members(session, base) == [a.id, b.id]
+    assert session.get(Playlist, other.id) is None
+    # No tombstone row exists for this provider with a null source_id.
+    rows = session.scalars(select(PlaylistMerge).where(PlaylistMerge.surviving_playlist_id == base.id)).all()
+    assert rows == []
+
+
 def test_merge_resolves_twins_to_canon(session):
     """A twin member of `other` folds in as its canon id, and dedups against base's canon."""
     canon = make_track(session, "canon")

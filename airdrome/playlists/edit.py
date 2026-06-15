@@ -33,7 +33,8 @@ def merge_playlists(s: Session, base: Playlist, others: list[Playlist]) -> int:
     Others' members are canon-resolved and appended at the end in source order, skipping any whose
     canon already appears in base (reconcile decision #2: minimal, deterministic, idempotent diff —
     no reshuffle). Each absorbed playlist gets a `PlaylistMerge` tombstone so a later `land` won't
-    recreate it. Deleting the absorbed `Playlist` cascades to its `PlaylistTrack`/`PlaylistLink`.
+    recreate it. Deleting the absorbed `Playlist` cascades to its `PlaylistTrack` rows (ORM
+    relationship) and its `PlaylistLink` rows (DB-level ON DELETE CASCADE FK).
     """
     existing = {_canon(s, pt.track_id) for pt in base.tracks}
     next_pos = _next_position(s, base.id)
