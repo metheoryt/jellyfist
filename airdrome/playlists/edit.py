@@ -5,10 +5,13 @@ tombstones); they never talk to a remote. The existing `sync` then propagates th
 as ordinary "ours" changes. See docs/design/playlist-tools.md for the locked decisions.
 """
 
+from collections import defaultdict
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from airdrome.models import Playlist, PlaylistMerge, PlaylistTrack, Track
+from airdrome.normalize.norm import normalize_name
 
 
 def _canon(s: Session, track_id: int) -> int:
@@ -82,3 +85,41 @@ def dedup_members(s: Session, playlist: Playlist) -> int:
             seen.add(cid)
     s.flush()
     return removed
+
+
+def group_by_name(playlists: list[Playlist]) -> list[list[Playlist]]:
+    """Group playlists by normalized name; return only size>1 groups, newest date_modified first.
+
+    The one auto-groupable case (design decision #3): exact normalized-name match. Near-duplicate
+    names ("calm" vs "calm 1") can't be grouped with confidence and need the explicit verb.
+    """
+    by_name: dict[str, list[Playlist]] = defaultdict(list)
+    for pl in playlists:
+        by_name[normalize_name(pl.name)].append(pl)
+    groups: list[list[Playlist]] = []
+    for members in by_name.values():
+        if len(members) > 1:
+            # Newest date_modified first (it anchors as base); NULL dates sort last.
+            members.sort(
+                key=lambda p: (
+                    p.date_modified is None,
+                    -p.date_modified.timestamp() if p.date_modified else 0,
+                )
+            )
+            groups.append(members)
+    return groups
+
+
+def merge_same_name(s: Session) -> tuple[int, int]:
+    """Auto-group canonical playlists by normalized name and merge each group into its newest.
+
+    Returns ``(groups_merged, members_appended)``. Replaces the old land --merge-playlists sweep;
+    tombstones keep every collapse durable across future imports.
+    """
+    playlists = list(s.scalars(select(Playlist)))
+    groups_merged = members_appended = 0
+    for group in group_by_name(playlists):
+        base, others = group[0], group[1:]
+        members_appended += merge_playlists(s, base, others)
+        groups_merged += 1
+    return groups_merged, members_appended

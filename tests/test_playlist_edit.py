@@ -4,11 +4,13 @@ These edit only the canonical Playlist/PlaylistTrack graph; `sync` propagates th
 The PlaylistMerge tombstone makes a merge durable across a later `land`.
 """
 
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 
 from airdrome.enums import Source
 from airdrome.models import Playlist, PlaylistMerge, PlaylistTrack
-from airdrome.playlists.edit import dedup_members, merge_playlists
+from airdrome.playlists.edit import dedup_members, group_by_name, merge_playlists, merge_same_name
 from airdrome.playlists.sync import _three_way_merge
 
 from factories import make_track
@@ -149,3 +151,31 @@ def test_dedup_member_removal_sticks_against_reconcile_base(session):
     ours = [1, 2]  # dedup_members dropped the redundant 1
     theirs = [1, 1, 2]
     assert _three_way_merge(base, ours, theirs) == [1, 2]
+
+
+def test_group_by_name_groups_normalized_newest_first(session):
+    """Only size>1 normalized-name groups are returned, newest date_modified anchoring first."""
+    a, b = make_track(session, "a"), make_track(session, "b")
+    older = _pl(session, "Mix", [a], source_id="g-1", modified=datetime(2020, 1, 1, tzinfo=UTC))
+    newer = _pl(session, "  mix ", [b], source_id="g-2", modified=datetime(2024, 1, 1, tzinfo=UTC))
+    solo = _pl(session, "Solo", [a], source_id="g-3")  # singleton -> excluded
+
+    groups = group_by_name([older, newer, solo])
+
+    assert len(groups) == 1  # only the "mix" group (size 2); Solo excluded
+    assert [pl.id for pl in groups[0]] == [newer.id, older.id]  # newest anchors first
+
+
+def test_merge_same_name_collapses_into_newest(session):
+    """merge_same_name folds older same-name playlists into the newest and tombstones them."""
+    a, b = make_track(session, "a"), make_track(session, "b")
+    older = _pl(session, "Mix", [a], source_id="g-1", modified=datetime(2020, 1, 1, tzinfo=UTC))
+    newer = _pl(session, "mix", [b], source_id="g-2", modified=datetime(2024, 1, 1, tzinfo=UTC))
+
+    merged_groups, appended = merge_same_name(session)
+
+    assert merged_groups == 1
+    assert appended == 1  # a folds into newer
+    assert session.get(Playlist, older.id) is None
+    assert set(_members(session, newer)) == {a.id, b.id}
+    assert session.get(PlaylistMerge, (Source.APPLE_MS, "g-1")) is not None
