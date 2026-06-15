@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: bc7f40a34db0
+Revision ID: e21009b1b250
 Revises:
-Create Date: 2026-06-05 20:21:58.744478
+Create Date: 2026-06-16 03:01:49.684085
 
 """
 
@@ -16,7 +16,7 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = "bc7f40a34db0"
+revision: str = "e21009b1b250"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -183,10 +183,31 @@ def upgrade() -> None:
         sa.Column("synced_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["playlist_id"], ["playlist.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("remote", "external_id"),
         sa.UniqueConstraint("playlist_id", "remote"),
+        sa.UniqueConstraint("remote", "external_id"),
     )
     op.create_index(op.f("ix_playlistlink_playlist_id"), "playlistlink", ["playlist_id"], unique=False)
+    op.create_table(
+        "playlistmerge",
+        sa.Column(
+            "provider",
+            sa.Enum(
+                "APPLE_XML",
+                "APPLE_MS",
+                "SPOTIFY",
+                "LASTFM",
+                "LISTENBRAINZ",
+                "NAVIDROME",
+                name="source",
+                native_enum=False,
+            ),
+            nullable=False,
+        ),
+        sa.Column("source_id", sa.String(), nullable=False),
+        sa.Column("surviving_playlist_id", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(["surviving_playlist_id"], ["playlist.id"], ondelete="SET NULL"),
+        sa.PrimaryKeyConstraint("provider", "source_id"),
+    )
     op.create_table(
         "playlisttrack",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -486,6 +507,7 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_playlisttrack_position"), table_name="playlisttrack")
     op.drop_index(op.f("ix_playlisttrack_playlist_id"), table_name="playlisttrack")
     op.drop_table("playlisttrack")
+    op.drop_table("playlistmerge")
     op.drop_index(op.f("ix_playlistlink_playlist_id"), table_name="playlistlink")
     op.drop_table("playlistlink")
     op.drop_index(op.f("ix_dedupgroupmember_member_hash"), table_name="dedupgroupmember")

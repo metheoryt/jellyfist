@@ -609,6 +609,25 @@ class PlaylistLink(Base):
     synced_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
 
 
+class PlaylistMerge(Base):
+    """Tombstone: an absorbed playlist's source identity, suppressed from recreation.
+
+    When `playlists merge` folds playlist B into A, B's canonical `Playlist` is deleted but its
+    underlying `SourcePlaylist` row survives — so the next `land`'s `get_or_create(platform,
+    source_id)` would recreate B and silently undo the merge. This row records B's source identity
+    so `unify_source_playlists` skips recreating it. `surviving_playlist_id` points to A for
+    traceability only; it is nullable (ON DELETE SET NULL) because a later `--rebuild-playlists`
+    may drop A without invalidating the suppression — the (provider, source_id) key is what
+    `land` checks.
+    """
+
+    __tablename__ = "playlistmerge"
+
+    provider: Mapped[Source] = mapped_column(sa.Enum(Source, native_enum=False), primary_key=True)
+    source_id: Mapped[str] = mapped_column(primary_key=True)
+    surviving_playlist_id: Mapped[int | None] = mapped_column(ForeignKey("playlist.id", ondelete="SET NULL"))
+
+
 class DedupGroup(Base):
     """A user-confirmed duplicate group from the manual deduplicator.
 
