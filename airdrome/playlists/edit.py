@@ -62,3 +62,23 @@ def merge_playlists(s: Session, base: Playlist, others: list[Playlist]) -> int:
         s.delete(other)
     s.flush()
     return appended
+
+
+def dedup_members(s: Session, playlist: Playlist) -> int:
+    """Collapse `PlaylistTrack` rows that resolve to the same canon. Returns rows removed.
+
+    Keeps the earliest position per canon, drops the rest. Idempotent. Relative to a reconcile
+    base that carried the duplicate, this reads as an "ours" deletion the multiset merge keeps
+    removed — it is not resurrected on the next `sync`.
+    """
+    seen: set[int] = set()
+    removed = 0
+    for pt in sorted(playlist.tracks, key=lambda p: p.position):
+        cid = _canon(s, pt.track_id)
+        if cid in seen:
+            s.delete(pt)
+            removed += 1
+        else:
+            seen.add(cid)
+    s.flush()
+    return removed

@@ -8,7 +8,8 @@ from sqlalchemy import select
 
 from airdrome.enums import Source
 from airdrome.models import Playlist, PlaylistMerge, PlaylistTrack
-from airdrome.playlists.edit import merge_playlists
+from airdrome.playlists.edit import dedup_members, merge_playlists
+from airdrome.playlists.sync import _three_way_merge
 
 from factories import make_track
 
@@ -112,3 +113,39 @@ def test_merge_resolves_twins_to_canon(session):
 
     assert appended == 0  # twin -> canon, already in base
     assert _members(session, base) == [canon.id]
+
+
+def test_dedup_members_collapses_canon_duplicates_keeping_earliest(session):
+    """Rows resolving to the same canon collapse to the earliest position; others untouched."""
+    canon = make_track(session, "canon")
+    twin = make_track(session, "twin")
+    twin.canon_id = canon.id
+    other = make_track(session, "other")
+    session.flush()
+    pl = _pl(session, "P", [canon, other, twin], source_id="p-1")  # canon & twin share a canon
+
+    removed = dedup_members(session, pl)
+
+    assert removed == 1  # the twin row drops (canon kept, earliest position)
+    assert _members(session, pl) == [canon.id, other.id]
+
+
+def test_dedup_members_is_idempotent(session):
+    """A second pass over an already-clean playlist removes nothing."""
+    a, b = make_track(session, "a"), make_track(session, "b")
+    pl = _pl(session, "P", [a, b], source_id="p-1")
+    assert dedup_members(session, pl) == 0
+    assert _members(session, pl) == [a.id, b.id]
+
+
+def test_dedup_member_removal_sticks_against_reconcile_base(session):
+    """A dedup deletion reads as an 'ours' removal vs a base that carried the dup — it stays gone.
+
+    The base snapshot (last sync) also held the duplicate, so the multiset 3-way merge keeps the
+    row removed rather than resurrecting it on the next `sync`. (Subtle interaction called out in
+    the design — guarded directly against the merge primitive.)
+    """
+    base = [1, 1, 2]  # base + theirs both carried the duplicate 1
+    ours = [1, 2]  # dedup_members dropped the redundant 1
+    theirs = [1, 1, 2]
+    assert _three_way_merge(base, ours, theirs) == [1, 2]
