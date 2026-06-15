@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from airdrome.enums import Source
 from airdrome.models import Playlist, PlaylistMerge, PlaylistTrack
+from airdrome.playlists.edit import merge_playlists
 
 from factories import make_track
 
@@ -48,3 +49,33 @@ def test_playlistmerge_tombstone_roundtrips(session):
     row = session.get(PlaylistMerge, (Source.APPLE_MS, "other-1"))
     assert row is not None
     assert row.surviving_playlist_id == base.id
+
+
+def test_merge_appends_unique_canon_resolved_and_tombstones(session):
+    """Others' members fold into base once, canon-resolved, appended; each other is tombstoned+deleted."""
+    a, b, c = make_track(session, "a"), make_track(session, "b"), make_track(session, "c")
+    base = _pl(session, "Base", [a, b], source_id="base-1")
+    other = _pl(session, "Other", [b, c], source_id="other-1")  # b overlaps base
+
+    appended = merge_playlists(session, base, [other])
+
+    assert appended == 1  # only c is new; b already present
+    assert _members(session, base) == [a.id, b.id, c.id]  # appended at end, order preserved
+    assert session.get(Playlist, other.id) is None  # absorbed playlist deleted
+    tomb = session.get(PlaylistMerge, (Source.APPLE_MS, "other-1"))
+    assert tomb is not None and tomb.surviving_playlist_id == base.id
+
+
+def test_merge_resolves_twins_to_canon(session):
+    """A twin member of `other` folds in as its canon id, and dedups against base's canon."""
+    canon = make_track(session, "canon")
+    twin = make_track(session, "twin")
+    twin.canon_id = canon.id
+    session.flush()
+    base = _pl(session, "Base", [canon], source_id="base-1")
+    other = _pl(session, "Other", [twin], source_id="other-1")  # twin resolves to canon
+
+    appended = merge_playlists(session, base, [other])
+
+    assert appended == 0  # twin -> canon, already in base
+    assert _members(session, base) == [canon.id]
