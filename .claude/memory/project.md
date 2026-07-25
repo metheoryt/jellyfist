@@ -1,4 +1,4 @@
-<!-- KB refreshed against c4d5423 on 2026-07-26 -->
+<!-- KB refreshed against ff21a95 on 2026-07-26 -->
 
 # Airdrome — project memory
 
@@ -20,5 +20,14 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
   (Ubuntu-26.04 on `g614jv`). `command -v docker` succeeds — Docker Desktop puts a
   shim on `PATH` — but every invocation dies with "The command 'docker' could not be
   found in this WSL 2 distro". So the compose Postgres, and therefore `uv run pytest`,
-  cannot run from a worktree here at all; use the Windows checkout or another box.
-  See the host memory for the underlying toggle.
+  cannot run from a worktree here at all. See the host memory for the underlying
+  toggle.
+- **There is no Windows checkout to fall back to.** Probed 2026-07-26: nothing
+  named `airdrome` exists anywhere under `C:\Users\methe` on `g614jv` (the empty
+  `C--Users-methe-GitHub-airdrome` transcript slug dir is the fossil of a deleted
+  clone), and `server` has none either. The base checkout `/home/me/my/airdrome`
+  sits in the *same* WSL distro as the Orca worktrees, so it shares the Docker
+  breakage. The one fleet box with both an airdrome clone and a working Docker
+  daemon is `latitude` (`~/my/airdrome`) — but its GitHub SSH key is unregistered,
+  so that clone cannot pull and drifts further behind on every push. Until one of
+  the two is fixed, no box on the fleet can run this repo's test suite.
