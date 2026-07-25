@@ -1,0 +1,21 @@
+{
+  "last_refresh": {
+    "commit": "ef148b8981142b095de5f0de32793b45b01946ec",
+    "date": "2026-07-26",
+    "sessions_processed": [
+      "05f647e0-802d-46a4-80e3-f3421feed202"
+    ],
+    "tiers_touched": [
+      "project"
+    ]
+  },
+  "sessions": {
+    "05f647e0-802d-46a4-80e3-f3421feed202": {
+      "cwd": "/home/me/orca/workspaces/airdrome/ubuntu26-airdrome-kb-refresh-daily",
+      "host": "g614jv",
+      "id_hash": "caec79bb35586c68813da2be8f7565e14b164ef9",
+      "last_line": 60,
+      "last_ts": "2026-07-25T19:38:06.796Z"
+    }
+  }
+}
