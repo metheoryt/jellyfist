@@ -29,5 +29,7 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
   sits in the *same* WSL distro as the Orca worktrees, so it shares the Docker
   breakage. The one fleet box with both an airdrome clone and a working Docker
   daemon is `latitude` (`~/my/airdrome`) — but its GitHub SSH key is unregistered,
-  so that clone cannot pull and drifts further behind on every push. Until one of
-  the two is fixed, no box on the fleet can run this repo's test suite.
+  so that clone cannot pull. As of 2026-07-26 it sits at `ef148b8`: current on
+  code, behind only on kb/docs commits, so it *can* run the suite against today's
+  code. It just can't be updated — every code commit from here widens the gap, and
+  fixing the key is the prerequisite for it staying a usable test box.
