@@ -1,4 +1,4 @@
-<!-- KB refreshed against ef148b8 on 2026-07-26 -->
+<!-- KB refreshed against c4d5423 on 2026-07-26 -->
 
 # Airdrome — project memory
 
@@ -16,3 +16,9 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
 - The test suite additionally needs the compose Postgres up (`docker compose up -d`,
   port 5437) — a doc-only change can be made and committed from a worktree without it,
   but any code change must be verified where Docker is reachable.
+- **Docker is *not* reachable from the WSL distro that hosts these Orca worktrees**
+  (Ubuntu-26.04 on `g614jv`). `command -v docker` succeeds — Docker Desktop puts a
+  shim on `PATH` — but every invocation dies with "The command 'docker' could not be
+  found in this WSL 2 distro". So the compose Postgres, and therefore `uv run pytest`,
+  cannot run from a worktree here at all; use the Windows checkout or another box.
+  See the host memory for the underlying toggle.

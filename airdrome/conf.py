@@ -14,8 +14,8 @@ class Settings(BaseSettings):
         description="Airdrome-organized library path. Must be empty for a fresh install."
     )
 
-    # Legacy: manual dedup choices now live in the DB (DedupGroup). Retained
-    # only so the one-time Alembic import migration can locate the old file.
+    # Manual dedup choices live in the DB (DedupGroup); this is the on-disk
+    # interchange file — the default path for `dedup-export` / `dedup-import`.
     duplicates_filepath: Path = Path("data") / "duplicates.json"
 
     # navidrome
