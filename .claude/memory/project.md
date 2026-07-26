@@ -1,4 +1,4 @@
-<!-- KB refreshed against ff21a95 on 2026-07-26 -->
+<!-- KB refreshed against eed2745 on 2026-07-27 -->
 
 # Airdrome — project memory
 
@@ -28,8 +28,17 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
   clone), and `server` has none either. The base checkout `/home/me/my/airdrome`
   sits in the *same* WSL distro as the Orca worktrees, so it shares the Docker
   breakage. The one fleet box with both an airdrome clone and a working Docker
-  daemon is `latitude` (`~/my/airdrome`) — but its GitHub SSH key is unregistered,
-  so that clone cannot pull. As of 2026-07-26 it sits at `ef148b8`: current on
+  daemon is `latitude` (`~/my/airdrome`) — but that clone cannot pull: `git` over
+  SSH to GitHub fails there. As of 2026-07-26 it sits at `ef148b8`: current on
   code, behind only on kb/docs commits, so it *can* run the suite against today's
   code. It just can't be updated — every code commit from here widens the gap, and
-  fixing the key is the prerequisite for it staying a usable test box.
+  unblocking its GitHub SSH is the prerequisite for it staying a usable test box.
+  The key is **not** unregistered (an earlier reading of this recorded here and in
+  `machines` was wrong): it is on the account, and the fault is local — see
+  `agents/hosts/latitude5520.md` in `machines` for the diagnosis and the probe
+  commands.
+- **Treat "run it on `latitude`" as conditional, not a standing fallback.** It is a
+  laptop, not an always-on server, and is routinely off the tailnet — this run found
+  it `offline, last seen 9h ago` and `fleet-gather.sh` skipped it as unreachable.
+  When a change needs the suite and `latitude` is down, there is no other box: park
+  the verification rather than assuming a fallback exists.
