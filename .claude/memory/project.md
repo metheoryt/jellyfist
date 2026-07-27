@@ -1,4 +1,4 @@
-<!-- KB refreshed against eed2745 on 2026-07-27 -->
+<!-- KB refreshed against 9fd979a on 2026-07-28 -->
 
 # Airdrome — project memory
 
@@ -42,3 +42,15 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
   it `offline, last seen 9h ago` and `fleet-gather.sh` skipped it as unreachable.
   When a change needs the suite and `latitude` is down, there is no other box: park
   the verification rather than assuming a fallback exists.
+
+## KB refresh cron
+
+- **This file is maintained from a worktree branch, not from `main`.** The daily
+  kb-refresh job runs in `orca/workspaces/airdrome/ubuntu26-airdrome-kb-refresh-daily`,
+  commits here and pushes `metheoryt/ubuntu26-airdrome-kb-refresh-daily` — merging
+  back into `main` is user-gated, so an unattended run never does it. The base
+  checkout `/home/me/my/airdrome` and every other worktree therefore load whatever
+  copy `main` happens to hold, which can be several refreshes behind. Before
+  trusting this file's contents from anywhere else in the repo, check
+  `git log --oneline main..metheoryt/ubuntu26-airdrome-kb-refresh-daily`; catching
+  up is a fast-forward run from the base checkout.

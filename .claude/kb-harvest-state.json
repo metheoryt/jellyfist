@@ -1,16 +1,17 @@
 {
   "last_refresh": {
-    "commit": "eed274526bc1356a8c46abf5849ba179c46d5410",
-    "date": "2026-07-27",
+    "commit": "9fd979a589670f00812c83ad785d32b0eeb4b232",
+    "date": "2026-07-28",
     "sessions_processed": [
       "05f647e0-802d-46a4-80e3-f3421feed202",
       "073b2744-bc35-4756-a217-b226cabc5668",
       "43fa9566-73d6-440b-a8c9-4ce6263d3bde",
+      "7ea09772-3121-4f01-bdfd-7541bf3c7753",
       "da1b6c56-bf36-46d2-bb60-2ad05f4aa0bc"
     ],
     "tiers_touched": [
       "project",
-      "host:latitude5520"
+      "global"
     ]
   },
   "sessions": {
@@ -32,8 +33,15 @@
       "cwd": "/home/me/orca/workspaces/airdrome/ubuntu26-airdrome-kb-refresh-daily",
       "host": "g614jv",
       "id_hash": "6f5ff5134170812bec879487a2ed14758e620bf6",
+      "last_line": 182,
+      "last_ts": "2026-07-26T23:28:25.448Z"
+    },
+    "7ea09772-3121-4f01-bdfd-7541bf3c7753": {
+      "cwd": "/home/me/orca/workspaces/airdrome/ubuntu26-airdrome-kb-refresh-daily",
+      "host": "g614jv",
+      "id_hash": "efed5dd1b0a3b854ced06face195f6eafca2867d",
       "last_line": 49,
-      "last_ts": "2026-07-26T23:20:59.116Z"
+      "last_ts": "2026-07-27T23:22:26.229Z"
     },
     "da1b6c56-bf36-46d2-bb60-2ad05f4aa0bc": {
       "cwd": "/home/me/orca/workspaces/airdrome/ubuntu26-airdrome-kb-refresh-daily",
