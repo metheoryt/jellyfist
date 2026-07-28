@@ -45,6 +45,14 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
   it `offline, last seen 9h ago` and `fleet-gather.sh` skipped it as unreachable.
   When a change needs the suite and `latitude` is down, there is no other box: park
   the verification rather than assuming a fallback exists.
+- **Check *why* `latitude` is unreachable before parking the work — it may be up.**
+  `fleet-gather.sh` prints `skipped (unreachable)` for both "offline" and
+  "online but SSH refuses". On 2026-07-29 it was the second: `tailscale status`
+  showed `latitude … active; direct` while every `ssh latitude` failed
+  `REMOTE HOST IDENTIFICATION HAS CHANGED` from a stale `~/.ssh/known_hosts`
+  entry on this box. That is a one-command repair a human has to authorize
+  (`ssh-keygen -R latitude`, then re-accept) — not a reason to give up on the
+  only box that can run the suite.
 
 ## KB refresh cron
 
