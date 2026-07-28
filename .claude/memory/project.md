@@ -1,4 +1,4 @@
-<!-- KB refreshed against 9fd979a on 2026-07-28 -->
+<!-- KB refreshed against adae7fe on 2026-07-29 -->
 
 # Airdrome — project memory
 
@@ -34,9 +34,12 @@ or [ROADMAP.md](../../ROADMAP.md) (forward-looking).
   code. It just can't be updated — every code commit from here widens the gap, and
   unblocking its GitHub SSH is the prerequisite for it staying a usable test box.
   The key is **not** unregistered (an earlier reading of this recorded here and in
-  `machines` was wrong): it is on the account, and the fault is local — see
-  `agents/hosts/latitude5520.md` in `machines` for the diagnosis and the probe
-  commands.
+  shared memory was wrong): it is on the account, and the fault is local. The
+  diagnosis and the probe commands are no longer in `machines` —
+  `agents/hosts/` was deleted 2026-07-28 (`6364b31`) and per-host memory now lives
+  in the private dotfiles bare repo on each box's own branch. Read latitude's from
+  anywhere with
+  `git --git-dir=$HOME/.dotfiles --work-tree=$HOME show origin/latitude:.claude/host-memory.md`.
 - **Treat "run it on `latitude`" as conditional, not a standing fallback.** It is a
   laptop, not an always-on server, and is routinely off the tailnet — this run found
   it `offline, last seen 9h ago` and `fleet-gather.sh` skipped it as unreachable.
